@@ -1,16 +1,61 @@
-# 这是一个示例 Python 脚本。
+"""
+SCIG 知构引擎 - FastAPI 应用入口
+"""
+import os
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import FileResponse
 
-# 按 Shift+F10 执行或将其替换为您的代码。
-# 按 双击 Shift 在所有地方搜索类、文件、工具窗口、操作和设置。
+from database import init_db
+from auth import router as auth_router
+from scig import router as scig_router
 
 
-def print_hi(name):
-    # 在下面的代码行中使用断点来调试脚本。
-    print(f'Hi, {name}')  # 按 Ctrl+F8 切换断点。
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用启动/关闭生命周期"""
+    init_db()  # 启动时建表
+    yield
 
 
-# 按装订区域中的绿色按钮以运行脚本。
-if __name__ == '__main__':
-    print_hi('PyCharm')
+app = FastAPI(
+    title="知构引擎 SCIG API",
+    description="Scientific Content Generation Engine — 从自然语言到高保真科学矢量图",
+    version="2.0.0-pro",
+    lifespan=lifespan,
+)
 
-# 访问 https://www.jetbrains.com/help/pycharm/ 获取 PyCharm 帮助
+# CORS: 允许开发时跨域访问
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 注册路由
+app.include_router(auth_router)
+app.include_router(scig_router)
+
+# 静态文件 & 前端 SPA
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+os.makedirs(static_dir, exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+@app.get("/")
+async def serve_frontend():
+    """服务前端单页应用"""
+    index_path = os.path.join(static_dir, "scig_dashboard.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "SCIG 知构引擎 API 已就绪", "docs": "/docs"}
+
+
+@app.get("/api/health")
+async def health_check():
+    """健康检查"""
+    return {"status": "ok", "service": "SCIG Engine v2 Pro"}
