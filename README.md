@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/工业级准确率-98.7%25-00bfff?style=for-the-badge&logo=target&logoColor=white&labelColor=111827" alt="Accuracy">
   <br/><br/>
   
-  # 🪐 知构引擎 SCIG (Scientific Content Generation)
+  # 🪐 知构引擎 SCIG 
   ### ── 让 AI 从“生成图像”进化为“构建结构” ──
   **面向高端教研与学术出版的自主创新“AI+教育”新质生产力工具**
 
