@@ -1,6 +1,3 @@
-"""
-SCIG 知构引擎 - FastAPI 应用入口
-"""
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -12,13 +9,11 @@ from database import init_db
 from auth import router as auth_router
 from scig import router as scig_router
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用启动/关闭生命周期"""
     init_db()  # 启动时建表
     yield
-
 
 app = FastAPI(
     title="知构引擎 SCIG API",
@@ -51,7 +46,6 @@ except OSError:
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-
 @app.get("/")
 async def serve_frontend():
     """服务前端单页应用"""
@@ -59,7 +53,6 @@ async def serve_frontend():
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return {"message": "SCIG 知构引擎 API 已就绪", "docs": "/docs"}
-
 
 @app.get("/api/health")
 async def health_check():

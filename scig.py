@@ -34,7 +34,6 @@ def sanitize_svg(text: str) -> str:
         result = result[start:end + 6]
     return result.strip()
 
-
 def inject_watermark(svg: str, tier: str) -> str:
     """为免费版 SVG 注入水印"""
     if tier != "free":
@@ -51,7 +50,6 @@ def inject_watermark(svg: str, tier: str) -> str:
         svg = svg[:idx] + watermark + svg[idx:]
     return svg
 
-
 def safe_float(val, default=0.0):
     """安全地将 SVG 属性字符串转换为浮点数，自动处理 % 和 px 避免崩溃"""
     if val is None:
@@ -65,7 +63,6 @@ def safe_float(val, default=0.0):
         return float(val_str)
     except (ValueError, TypeError):
         return default
-
 
 # ═══════════════════════════════════════════════════════
 #  ScigValidator: 三层刚性校验
@@ -93,7 +90,6 @@ CHEMISTRY_KEYWORDS = [
     "摩尔", "mol", "浓度", "concentration", "pH",
     "→", "←", "⇌", "⟶", "+",
 ]
-
 
 class ScigValidator:
     """三层刚性逻辑校验器 (MVP 启发式版本)"""
@@ -280,7 +276,6 @@ class ScigValidator:
             },
         )
 
-
 # ═══════════════════════════════════════════════════════
 #  LLM 编译客户端
 # ═══════════════════════════════════════════════════════
@@ -315,7 +310,6 @@ SYSTEM_PROMPT_TEMPLATES = {
 4. 构图必须富有叙事性、层次感和视觉冲击力，支持复杂的多层级子图嵌套表达。
 5. 所有的 SVG 几何坐标（如 x1, y1, cx, cy, width, height 等）必须使用纯数字绝对像素值，绝对不允许带有 '%' 或 'px' 等单位符号。""",
 }
-
 
 async def compile_svg_via_deepseek(prompt_text: str, tier: str) -> str:
     """通过 DeepSeek API 将自然语言编译为 SVG"""
@@ -356,7 +350,6 @@ async def compile_svg_via_deepseek(prompt_text: str, tier: str) -> str:
             raise HTTPException(status_code=502, detail=f"LLM API 异常: HTTP {e.response.status_code}")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"编译管线内部错误: {str(e)}")
-
 
 # ═══════════════════════════════════════════════════════
 #  核心端点
@@ -438,7 +431,6 @@ async def compile_pipeline(
         created_at=gen.created_at.isoformat() if gen.created_at else None,
     )
 
-
 @router.get("/generations", response_model=GenerationListResponse)
 def list_generations(
     current_user: User = Depends(get_current_user),
@@ -474,7 +466,6 @@ def list_generations(
 
     return GenerationListResponse(items=summaries, total=total)
 
-
 @router.get("/generations/{gen_id}")
 def get_generation(
     gen_id: int,
@@ -505,7 +496,6 @@ def get_generation(
         "model_used": gen.model_used,
         "created_at": gen.created_at.isoformat() if gen.created_at else None,
     }
-
 
 # ── 订阅 & 升级 ─────────────────────────────────────
 
@@ -561,7 +551,6 @@ def get_plans():
         ),
     ]
     return PlansResponse(plans=plans)
-
 
 @router.post("/subscription/upgrade", response_model=UpgradeResponse)
 def upgrade_subscription(
