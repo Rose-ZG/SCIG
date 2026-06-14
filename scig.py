@@ -47,7 +47,7 @@ def inject_watermark(svg: str, tier: str) -> str:
     if tier != "free":
         return svg
     watermark = (
-        '\n  <!-- SCIG Free Tier Watermark -->'
+        '\n  '
         '\n  <text x="95%" y="97%" font-size="10" fill="#ffffff18" '
         'font-family="sans-serif" text-anchor="end" '
         'font-style="italic">SCIG Free · 升级 Premium 解锁无水印导出</text>\n'
@@ -57,6 +57,21 @@ def inject_watermark(svg: str, tier: str) -> str:
     if idx != -1:
         svg = svg[:idx] + watermark + svg[idx:]
     return svg
+
+
+def safe_float(val, default=0.0):
+    """安全地将 SVG 属性字符串转换为浮点数，自动处理 % 和 px 避免崩溃"""
+    if val is None:
+        return default
+    try:
+        val_str = str(val).strip()
+        if val_str.endswith('%'):
+            return float(val_str.replace('%', ''))
+        if val_str.endswith('px'):
+            return float(val_str.replace('px', ''))
+        return float(val_str)
+    except (ValueError, TypeError):
+        return default
 
 
 # ═══════════════════════════════════════════════════════
@@ -113,23 +128,33 @@ class ScigValidator:
 
         nodes = []
         for cx, cy in circles:
-            nodes.append({"type": "circle", "x": float(cx), "y": float(cy)})
+            nodes.append({"type": "circle", "x": safe_float(cx), "y": safe_float(cy)})
         for x, y, w, h in rects:
-            nodes.append({"type": "rect", "x": float(x) + float(w) / 2, "y": float(y) + float(h) / 2})
+            nodes.append({
+                "type": "rect",
+                "x": safe_float(x) + safe_float(w) / 2,
+                "y": safe_float(y) + safe_float(h) / 2
+            })
         for cx, cy in ellipses:
-            nodes.append({"type": "ellipse", "x": float(cx), "y": float(cy)})
+            nodes.append({"type": "ellipse", "x": safe_float(cx), "y": safe_float(cy)})
 
         edges = []
         for x1, y1, x2, y2 in lines:
-            edges.append({"x1": float(x1), "y1": float(y1), "x2": float(x2), "y2": float(y2)})
-        # 简单解析 path 中的 M ... L ... 指令
+            edges.append({
+                "x1": safe_float(x1),
+                "y1": safe_float(y1),
+                "x2": safe_float(x2),
+                "y2": safe_float(y2)
+            })
+
+        # 简单解析 path 中的 M ... L ... 指令，正则兼容提取数字+可能的单位(%/px)
         for d in paths:
-            coords = re.findall(r"([\d.]+)[,\s]+([\d.]+)", d)
+            coords = re.findall(r"([\d.]+(?:%|px)?)[,\s]+([\d.]+(?:%|px)?)", d)
             if len(coords) >= 2:
                 for i in range(len(coords) - 1):
                     edges.append({
-                        "x1": float(coords[i][0]), "y1": float(coords[i][1]),
-                        "x2": float(coords[i + 1][0]), "y2": float(coords[i + 1][1]),
+                        "x1": safe_float(coords[i][0]), "y1": safe_float(coords[i][1]),
+                        "x2": safe_float(coords[i + 1][0]), "y2": safe_float(coords[i + 1][1]),
                     })
 
         return {"nodes": nodes, "edges": edges}
@@ -274,7 +299,8 @@ SYSTEM_PROMPT_TEMPLATES = {
 硬性要求：
 1. 必须只能输出以 <svg 开头，以 </svg> 结束的规范内联代码，绝不允许带有 Markdown 语法标记（绝对不要写 ```html）、不要写任何前言废话、不要有任何多余的解释文字。
 2. 画面必须极其高大上且极具科技美学：背景必须显式设定为深邃的极暗色系（如 #020617），推荐大量运用微弱的发光滤镜（feDropShadow / feGaussianBlur）、高级渐变色彩（LinearGradient）、纤细且粗细有致的线条来表达信号或物质流向。
-3. 节点实体标签可读性要强，画面尺寸规范设置在 viewBox="0 0 800 400" 左右，保证良好的响应式视口自适应缩放性能。""",
+3. 节点实体标签可读性要强，画面尺寸规范设置在 viewBox="0 0 800 400" 左右，保证良好的响应式视口自适应缩放性能。
+4. 所有的 SVG 几何坐标（如 x1, y1, cx, cy, width, height 等）必须使用纯数字绝对像素值，绝对不允许带有 '%' 或 'px' 等单位符号。""",
 
     "premium": """你是一位精通微观生物化学、半导体工程机理以及极致前端现代美学的图纸编译专家。
 你的唯一任务是根据用户对严肃科学机理的描述，直接设计并编写出一段完美的、富有视觉震撼力的高清 SVG 矢量代码。
@@ -283,7 +309,8 @@ SYSTEM_PROMPT_TEMPLATES = {
 1. 必须只能输出以 <svg 开头，以 </svg> 结束的规范内联代码，绝不允许带有 Markdown 语法标记（绝对不要写 ```html）、不要写任何前言废话、不要有任何多余的解释文字。
 2. 画面必须极其高大上且极具科技美学：背景必须显式设定为深邃的极暗色系（如 #020617），大量运用多层发光滤镜组合（feDropShadow + feGaussianBlur + feMerge），多级高级渐变色彩（多个 LinearGradient 叠加），纤细与粗线交替表达主次信号流向。
 3. 画面尺寸规范设置在 viewBox="0 0 1000 600"，节点实体标签字体更大更清晰，排版更从容，保证良好的响应式视口自适应缩放性能。
-4. 构图必须富有叙事性、层次感和视觉冲击力，如同 Cell/Nature 期刊封面图品质。""",
+4. 构图必须富有叙事性、层次感和视觉冲击力，如同 Cell/Nature 期刊封面图品质。
+5. 所有的 SVG 几何坐标（如 x1, y1, cx, cy, width, height 等）必须使用纯数字绝对像素值，绝对不允许带有 '%' 或 'px' 等单位符号。""",
 
     "enterprise": """你是一位精通微观生物化学、半导体工程机理以及极致前端现代美学的图纸编译专家。
 你的唯一任务是根据用户对严肃科学机理的描述，直接设计并编写出一段完美的、富有视觉震撼力的高清 SVG 矢量代码。
@@ -292,7 +319,8 @@ SYSTEM_PROMPT_TEMPLATES = {
 1. 必须只能输出以 <svg 开头，以 </svg> 结束的规范内联代码，绝不允许带有 Markdown 语法标记（绝对不要写 ```html）、不要写任何前言废话、不要有任何多余的解释文字。
 2. 画面必须极具顶级期刊发表水准：背景使用多层次暗色系与微网格纹理，大量运用光晕、内外阴影、多层渐变叠加等高级滤镜技术，创建丰富的视觉深度。
 3. 画布尺寸 viewBox="0 0 1200 700"，排版奢华，适合高清打印与投影展示。
-4. 构图必须富有叙事性、层次感和视觉冲击力，支持复杂的多层级子图嵌套表达。""",
+4. 构图必须富有叙事性、层次感和视觉冲击力，支持复杂的多层级子图嵌套表达。
+5. 所有的 SVG 几何坐标（如 x1, y1, cx, cy, width, height 等）必须使用纯数字绝对像素值，绝对不允许带有 '%' 或 'px' 等单位符号。""",
 }
 
 
