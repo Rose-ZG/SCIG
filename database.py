@@ -1,7 +1,3 @@
-"""
-SCIG 知构引擎 - 数据库模块
-SQLAlchemy ORM 模型 (兼容 SQLite 与 PostgreSQL)
-"""
 import os
 from datetime import datetime, date
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Date, ForeignKey, UniqueConstraint
@@ -108,5 +104,4 @@ class DailyQuota(Base):
 
 # ── 建表 ────────────────────────────────────────────
 def init_db():
-    """在应用启动时调用，创建所有表"""
     Base.metadata.create_all(bind=engine)
