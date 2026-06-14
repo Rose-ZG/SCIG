@@ -2,22 +2,22 @@
 SCIG 知构引擎 - 数据库模块
 SQLAlchemy ORM 模型 (兼容 SQLite 与 PostgreSQL)
 """
-from datetime import datetime, date
 import os
+from datetime import datetime, date
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Date, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import sessionmaker, DeclarativeBase, relationship
 from config import settings
 
-# ── 引擎 & 会话 ──────────────────────────────────────
-db_url = settings.DATABASE_URL
+# ── 引擎 & 会话配置 ──────────────────────────────────
+# 核心安全修改：强行优先读取环境变量，读取不到再使用 settings 中的配置
+db_url = os.getenv("DATABASE_URL") or settings.DATABASE_URL
 
-# 1. 兼容处理：SQLAlchemy 1.4+ / 2.0 必须使用 postgresql:// 而不能是 postgres://
-if db_url.startswith("postgres://"):
+# 1. 兼容处理：SQLAlchemy 必须使用 postgresql:// 而不能是 postgres://
+if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-# 2. 判断是否为 SQLite（本地开发通常用 SQLite，云端用 Postgres）
-is_sqlite = db_url.startswith("sqlite")
-
+# 2. 判断当前使用的是否为 SQLite
+is_sqlite = db_url.startswith("sqlite") if db_url else True
 connect_args = {"check_same_thread": False} if is_sqlite else {}
 
 engine = create_engine(
@@ -27,8 +27,10 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 class Base(DeclarativeBase):
     pass
+
 
 # ── 依赖注入: FastAPI 获取 DB 会话 ───────────────────
 def get_db():
@@ -37,6 +39,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 # ── ORM 模型 ─────────────────────────────────────────
 

@@ -42,7 +42,13 @@ app.include_router(scig_router)
 
 # 静态文件 & 前端 SPA
 static_dir = os.path.join(os.path.dirname(__file__), "static")
-os.makedirs(static_dir, exist_ok=True)
+
+# Vercel 安全修正：使用 try-except 包裹创建文件夹目录，防止无服务器环境只读报错
+try:
+    os.makedirs(static_dir, exist_ok=True)
+except OSError:
+    pass
+
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
