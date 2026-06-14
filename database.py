@@ -1,25 +1,34 @@
 """
 SCIG 知构引擎 - 数据库模块
-SQLAlchemy ORM 模型 (SQLite)
+SQLAlchemy ORM 模型 (兼容 SQLite 与 PostgreSQL)
 """
 from datetime import datetime, date
+import os
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Date, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import sessionmaker, DeclarativeBase, relationship
 from config import settings
 
-
 # ── 引擎 & 会话 ──────────────────────────────────────
+db_url = settings.DATABASE_URL
+
+# 1. 兼容处理：SQLAlchemy 1.4+ / 2.0 必须使用 postgresql:// 而不能是 postgres://
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+# 2. 判断是否为 SQLite（本地开发通常用 SQLite，云端用 Postgres）
+is_sqlite = db_url.startswith("sqlite")
+
+connect_args = {"check_same_thread": False} if is_sqlite else {}
+
 engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args={"check_same_thread": False},  # SQLite 需要
+    db_url,
+    connect_args=connect_args,
     echo=False,
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-
 class Base(DeclarativeBase):
     pass
-
 
 # ── 依赖注入: FastAPI 获取 DB 会话 ───────────────────
 def get_db():
@@ -28,7 +37,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
 
 # ── ORM 模型 ─────────────────────────────────────────
 
