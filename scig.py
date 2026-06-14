@@ -1,7 +1,3 @@
-"""
-SCIG 知构引擎 - 核心编译管线
-配额检查 → LLM编译 → SVG净化 → 三层校验 → 水印注入 → 存储返回
-"""
 import re
 import json
 from datetime import date, datetime, timedelta
@@ -20,10 +16,7 @@ from schemas import (
     UpgradeRequest, UpgradeResponse,
     PlansResponse, SubscriptionPlan,
 )
-
 router = APIRouter(prefix="/api", tags=["SCIG 编译管线"])
-
-
 # ═══════════════════════════════════════════════════════
 #  工具函数
 # ═══════════════════════════════════════════════════════
