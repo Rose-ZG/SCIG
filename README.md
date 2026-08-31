@@ -44,6 +44,34 @@ python app.py
 
 部署平台上建议把 `ZHIGOU_DATABASE_URL` 和 `DEEPSEEK_API_KEY` 放到 Secrets / Environment Variables，不要写进前端代码、仓库或打包后的静态文件。配置模板见 `.env.production.example`。
 
+## Vercel 部署
+
+项目已经提供 Vercel 需要的 FastAPI 入口：`backend/server.py` 中的 `app`。`pyproject.toml` 里通过下面配置指向该入口：
+
+```toml
+[tool.vercel]
+entrypoint = "backend.server:app"
+```
+
+部署步骤：
+
+1. 将仓库导入 Vercel。
+2. 在项目环境变量中配置 `ZHIGOU_ENV=production`。
+3. 配置外部 PostgreSQL 连接串：`ZHIGOU_DATABASE_URL=postgresql://user:password@host:5432/dbname?sslmode=require`。
+4. 配置后端对话服务密钥：`DEEPSEEK_API_KEY=你的密钥`。
+5. 保持 `ZHIGOU_REQUIRE_EXTERNAL_DB=true` 和 `ZHIGOU_ALLOW_EMBEDDED_DB=false`。
+
+线上环境推荐使用 Neon、Supabase、Aiven、Render PostgreSQL 或云厂商托管 PostgreSQL。Vercel 的 Serverless Runtime 不适合启动本地数据库进程，因此生产环境必须连接外部数据库。
+
+本地也可以用 ASGI 方式验证入口：
+
+```powershell
+pip install -r requirements.txt
+uvicorn backend.server:app --reload --port 8001
+```
+
+如果本地没有外部 PostgreSQL，可以继续使用 `python app.py` 进行演示运行。
+
 ## 对话服务配置
 
 配置密钥后，`/api/chat` 会先执行本地物理约束、模型拟合和假设排行，再把精简分析上下文交给后端对话服务生成真实对话回复。
